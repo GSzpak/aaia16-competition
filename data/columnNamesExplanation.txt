@@ -1,0 +1,48 @@
+Attributes of the main data files:
+
+main_working_id                         - ID of the main working site (at a longwall) where the measurements were taken
+total_bumps_energy                      - total energy of seismic bumps registered in the last 24h
+total_tremors_energy                    - total energy of seismic tremors (major seismic bumps) registered in the last 24h 
+total_destressing_blasts_energy         - total energy of destressing blasts in the last 24h
+total_seismic_energy                    - total seismic energy of all types of bumps
+latest_progress_estimation_l            - latest available estimation of progress in the mining of the main working (from left)
+latest_progress_estimation_r            - latest available estimation of progress in the mining of the main working (from right)
+latest_seismic_assessment               - latest available hazard assessment made by experts using, so called, seismic method - ordered attribute: a - no hazard; b - moderate hazard; c - high hazard; d - dangerous
+latest_seismoacoustic_assessment        - latest available hazard assessment made by experts using, so called, seismoacoustic method - ordered attribute: a - no hazard; b - moderate hazard; c - high hazard; d - dangerous
+latest_comprehensive_assessment         - latest available hazard assessment made by experts using, so called, comprehensive method - ordered attribute: a - no hazard; b - moderate hazard; c - high hazard; d - dangerous
+latest_hazards_assessment               - latest available hazard assessment made using an alternative seismoacoustic method - ordered attribute: a - no hazard; b - moderate hazard; c - high hazard; d - dangerous
+latest_maximum_yield                    - maximum yield from the last meter of the latest small-diameter drilling
+latest_maximum_meter                    - depth at which the maximum yield from the latest small-diameter drilling was registered
+count_e2 .1 ... .24                     - number of registered seismic bumps with energy in range (0, 10^2] within the corresponding hour
+count_e3 .1 ... .24                     - number of registered seismic bumps with energy in range (10^2, 10^3] within the corresponding hour
+count_e4 .1 ... .24                     - number of registered seismic bumps with energy in range (10^3, 10^4] within the corresponding hour
+count_e5 .1 ... .24                     - number of registered seismic bumps with energy in range (10^4, 10^5] within the corresponding hour
+count_e6plus .1 ... .24                 - number of registered seismic bumps with energy in range (10^5, Inf) within the corresponding hour
+sum_e2 .1 ... .24                       - sum of energy of registered seismic bumps with energy in range (0, 10^2] within the corresponding hour
+sum_e3 .1 ... .24                       - sum of energy of registered seismic bumps with energy in range (10^2, 10^3] within the corresponding hour
+sum_e4 .1 ... .24                       - sum of energy of registered seismic bumps with energy in range (10^3, 10^4] within the corresponding hour
+sum_e5 .1 ... .24                       - sum of energy of registered seismic bumps with energy in range (10^4, 10^5] within the corresponding hour
+sum_e6plus .1 ... .24                   - sum of energy of registered seismic bumps with energy in range (10^5, Inf) within the corresponding hour
+total_number_of_bumps .1 ... .24        - total number of seismic bumps within the corresponding hour
+number_of_rock_bursts .1 ... .24        - total number of rock bursts (tremors) within the corresponding hour
+number_of_destressing_blasts .1 ... .24 - total number of destressing blasts within the corresponding hour
+highest_bump_energy .1 ... .24          - energy of the strongest seismic bump within the corresponding hour
+max_gactivity .1 ... .24                - maximum activity of the most active geophone within the corresponding hour
+max_genergy .1 ... .24                  - maximum energy registered by the most active geophone within the corresponding hour
+avg_gactivity .1 ... .24                - average activity of the most active geophone within the corresponding hour
+avg_genergy .1 ... .24                  - average energy registered by the most active geophone within the corresponding hour
+max_difference_in_gactivity .1 ... .24  - maximum difference in activity of the most active geophone for the corresponding hour
+max_difference_in_genergy .1 ... .24    - maximum difference in registered energy by the most active geophone for the corresponding hour
+avg_difference_in_gactivity .1 ... .24  - average difference in activity of the most active geophone for the corresponding hour
+avg_difference_in_genergy .1 ... .24    - average difference in registered energy by the most active geophone for the corresponding hour
+
+
+Attributes of the meta-data file:
+
+main_working_id                         - ID of the main working site (at a longwall)
+main_working_name                       - name of the main working site
+region_name                             - name of a region where the main working is located
+bed_name                                - name of a coal bed
+main_working_type                       - type of the main working
+main_working_height                     - height of the main working
+geological_assessment                   - geological assessment of the main working site made by experts before the beginning of exploration
