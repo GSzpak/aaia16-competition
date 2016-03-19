@@ -1,6 +1,7 @@
+import functools
 import heapq
 import itertools
-
+import multiprocessing
 import numpy as np
 import pickle
 
@@ -24,24 +25,43 @@ def get_md_time_series(mongo_obj, series_names, values_key):
     return np.array(result, dtype=np.float64)
 
 
+def find_nn(distance_fun, all_time_series, ts_tuple):
+    (index, (id_, time_series)) = ts_tuple
+    neighbours_distances = []
+    for index2, (id2, time_series2) in enumerate(all_time_series):
+        if index == index2:
+            continue
+        distance = distance_fun(time_series, time_series2)
+        neighbours_distances.append((distance, id2))
+    nearest_neighbours = heapq.nsmallest(KNN_LIMIT, neighbours_distances)
+    nearest_neighbours.sort()
+    print index
+    return id_, nearest_neighbours
+
+
 def custom_calculate_knn(collection, distance_fun, series_names=None, values_key='z_normalization_values'):
     series_names_key = "_".join(series_names) if series_names is not None else "all"
     knn_key = "knn_{}_{}_{}".format(distance_fun.__name__, series_names_key, values_key)
-    cursor1 = collection.find(filter={}, modifiers={"$snapshot": True})
-    for obj1 in cursor1:
-        neighbours_distances = []
-        cursor2 = collection.find(filter={}, modifiers={"$snapshot": True})
-        for obj2 in cursor2:
-            time_series1 = get_md_time_series(obj1, series_names, values_key)
-            time_series2 = get_md_time_series(obj2, series_names, values_key)
-            distance = distance_fun(time_series1, time_series2)
-            neighbours_distances.append((distance, obj2["_id"]))
-        nearest_neighbours = heapq.nsmallest(KNN_LIMIT, neighbours_distances)
-        nearest_neighbours.sort()
-        obj1[knn_key] = nearest_neighbours
-        collection.save(obj1)
-        cursor2.close()
-    cursor1.close()
+    cursor = collection.find(projection={'sequences': True}, modifiers={"$snapshot": True})
+    all_time_series = []
+    for obj in cursor:
+        time_series = get_md_time_series(obj, series_names, values_key)
+        all_time_series.append((obj["_id"], time_series))
+    cursor.close()
+    print "data loaded"
+    pool = multiprocessing.Pool(processes=4)
+    calc_func = functools.partial(find_nn, distance_fun, all_time_series)
+    results = pool.map(calc_func, enumerate(all_time_series))
+    pool.close()
+    pool.join()
+    with open("{}_results.p".format(knn_key), "wb") as f:
+        pickle.dump(results, f)
+    cursor = collection.find(filter={}, modifiers={"$snapshot": True})
+    for obj, (id_, nearest_neighbours) in itertools.izip(cursor, results):
+        assert obj["_id"] == id_
+        obj[knn_key] = nearest_neighbours
+        collection.save(obj)
+    cursor.close()
 
 
 def calculate_knn(collection, metric, series_names=None, values_key='z_normalization_values'):
@@ -79,7 +99,7 @@ def knn(metric, series_names=None, values_key='z_normalization_values'):
         db = client[DB_NAME]
         collections = [db.training_data]
         for collection in collections:
-            calculate_knn(
+            custom_calculate_knn(
                 collection,
                 metric,
                 series_names=series_names,
