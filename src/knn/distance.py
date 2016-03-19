@@ -22,11 +22,11 @@ def multidimensional_dynamic_time_warping(md_time_series1, md_time_series2, dist
     for j in xrange(1, len2):
         accumulated_cost[0, j] = accumulated_cost[0, j - 1] + distances[0, j]
     for i in xrange(1, len1):
-        for j in xrange(len2):
+        for j in xrange(1, len2):
             accumulated_cost[i, j] = min(accumulated_cost[i - 1, j - 1],
                                          accumulated_cost[i, j - 1],
                                          accumulated_cost[i - 1, j]) + distances[i, j]
-    return accumulated_cost[len1 - 1, len2 - 1]
+    return accumulated_cost[-1, -1]
 
 
 md_dtw = DistanceMetric.get_metric('pyfunc', func=multidimensional_dynamic_time_warping)
