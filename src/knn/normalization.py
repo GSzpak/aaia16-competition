@@ -20,7 +20,7 @@ def z_normalization(time_series):
     if stdev > 0:
         return [(val - mean) / stdev for val in np.nditer(time_series)]
     else:
-        return time_series.tolist()
+        return [0.0 for _ in np.nditer(time_series)]
 
 
 def do_normalize(collection, normalization_fun):
