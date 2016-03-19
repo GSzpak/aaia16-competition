@@ -1,11 +1,12 @@
 import heapq
+import itertools
+
 import numpy as np
 import pickle
 
 from pymongo import MongoClient
 from sklearn.neighbors import NearestNeighbors
 
-from distance import multidimensional_dynamic_time_warping
 from src.import_data import DB_NAME
 
 
@@ -17,7 +18,10 @@ def get_md_time_series(mongo_obj, series_names, values_key):
         series = mongo_obj['sequences'].values()
     else:
         series = [mongo_obj['sequences'][series_name] for series_name in series_names]
-    return [s[values_key] for s in series]
+    result = []
+    for s in series:
+        result.extend(s[values_key])
+    return np.array(result, dtype=np.float64)
 
 
 def custom_calculate_knn(collection, distance_fun, series_names=None, values_key='z_normalization_values'):
@@ -40,9 +44,9 @@ def custom_calculate_knn(collection, distance_fun, series_names=None, values_key
     cursor1.close()
 
 
-def calculate_knn(collection, distance_fun, series_names=None, values_key='z_normalization_values'):
+def calculate_knn(collection, metric, series_names=None, values_key='z_normalization_values'):
     series_names_key = "_".join(series_names) if series_names is not None else "all"
-    knn_key = "knn_{}_{}_{}".format(distance_fun.__name__, series_names_key, values_key)
+    knn_key = "knn_{}_{}_{}".format("dtw", series_names_key, values_key)
     cursor = collection.find(projection={'sequences': True}, modifiers={"$snapshot": True})
     cursor.batch_size = 1000000
     all_time_series = []
@@ -54,23 +58,30 @@ def calculate_knn(collection, distance_fun, series_names=None, values_key='z_nor
         print counter
     cursor.close()
     all_time_series = np.array(all_time_series)
+    print all_time_series
+    print all_time_series.shape
     neighbours = NearestNeighbors(
         n_neighbors=KNN_LIMIT,
         algorithm='ball_tree',
-        leaf_size=50,
-        metric=distance_fun,
+        leaf_size=100,
+        metric=metric,
         n_jobs=-1,
     )
     print "fitting..."
     neighbours.fit(all_time_series)
-    with open("neighours.p", "wb") as f:
+    with open("{}_neighours.p".format(knn_key), "wb") as f:
         pickle.dump(neighbours, f)
+    print "finished"
 
 
-
-def knn(distance_fun, series_names=None, values_key='z_normalization_values'):
+def knn(metric, series_names=None, values_key='z_normalization_values'):
     with MongoClient() as client:
         db = client[DB_NAME]
         collections = [db.training_data]
         for collection in collections:
-            calculate_knn(collection, distance_fun, series_names=series_names, values_key=values_key)
+            calculate_knn(
+                collection,
+                metric,
+                series_names=series_names,
+                values_key=values_key,
+            )
