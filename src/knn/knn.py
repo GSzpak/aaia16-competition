@@ -49,7 +49,7 @@ def custom_calculate_knn(collection, distance_fun, series_names=None, values_key
         all_time_series.append((obj["_id"], time_series))
     cursor.close()
     print "data loaded"
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool(processes=3)
     calc_func = functools.partial(find_nn, distance_fun, all_time_series)
     results = pool.map(calc_func, enumerate(all_time_series))
     pool.close()
