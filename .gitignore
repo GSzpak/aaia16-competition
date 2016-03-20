@@ -2,5 +2,4 @@
 *.csv
 *.pyc
 .DS_Store
-*.ipynb
 *.p
