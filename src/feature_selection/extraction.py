@@ -1,10 +1,14 @@
+import aggregation_functions
+
 from pymongo import MongoClient
 
 from src.import_data import DB_NAME
 
 
-def avg(list_):
-    return sum(list_) / float(len(list_))
+#TODO:
+# - DFT, DWT,
+# auto-correlations,
+# cross-correlations
 
 
 EIGHT_HOUR_AGGREGATE_FUNS = {
@@ -24,16 +28,16 @@ EIGHT_HOUR_AGGREGATE_FUNS = {
     'highest_bump_energy': max,
     'max_gactivity': max,
     'max_genergy': max,
-    'avg_gactivity': avg,
-    'avg_genergy': avg,
+    'avg_gactivity': aggregation_functions.mean,
+    'avg_genergy': aggregation_functions.mean,
     'max_difference_in_gactivity': max,
     'max_difference_in_genergy': max,
-    'avg_difference_in_gactivity': avg,
-    'avg_difference_in_genergy': avg,
+    'avg_difference_in_gactivity': aggregation_functions.mean,
+    'avg_difference_in_genergy': aggregation_functions.mean,
 }
 
 
-def calculate_8hr_aggregates(time_series_name, time_series):
+def calculate_8hr_aggregates(time_series, time_series_name):
     assert len(time_series) == 24
     chunk_size = 8
     chunk1, chunk2, chunk3 = [time_series[i:i+chunk_size] for i in range(0, len(time_series), chunk_size)]
@@ -45,26 +49,36 @@ def calculate_8hr_aggregates(time_series_name, time_series):
     }
 
 
-def do_add_features(time_series_name, time_series, extraction_funs):
+def get_all_features(time_series, extraction_funs):
     features = {}
-    for extraction_fun, additional_args, additional_kwargs in extraction_funs:
-        features.update(extraction_fun(time_series_name, time_series, *additional_kwargs, **additional_kwargs))
-    for key, value in features.iteritems():
-        time_series[key] = value
+    for extraction_fun in extraction_funs:
+        features.update(extraction_fun(time_series))
+    return features
+
+
+def do_add_features(time_series_name, time_series_info):
+    time_series = time_series_info['values']
+    extraction_funs = [function for _, function in aggregation_functions.__dict__.iteritems() if callable(function)]
+    features = get_all_features(time_series, extraction_funs)
+    features.update(calculate_8hr_aggregates(time_series, time_series_name))
+    last_8hr_features = get_all_features(time_series[-8:], extraction_funs)
+    last_8hr_features = {
+        '{}_{}'.format('last_8hr', feature_name): feature_value
+        for feature_name, feature_value in last_8hr_features.iteritems()
+    }
+    features.update(last_8hr_features)
+    time_series_info['values_features'] = features
 
 
 def add_features():
     with MongoClient() as client:
         db = client[DB_NAME]
         collections = [db.training_data, db.test_data]
-        extraction_funs = [
-            calculate_8hr_aggregates,
-        ]
         for collection in collections:
             cursor = collection.find(filter={}, modifiers={"$snapshot": True})
             for obj in cursor:
                 all_time_series = obj['sequences']
-                for time_series_name, time_series in all_time_series.iteritems():
-                    do_add_features(time_series_name, time_series, extraction_funs)
+                for time_series_name, time_series_info in all_time_series.iteritems():
+                    do_add_features(time_series_name, time_series_info)
                 collection.save(obj)
             cursor.close()
