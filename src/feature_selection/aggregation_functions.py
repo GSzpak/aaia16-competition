@@ -1,8 +1,7 @@
-from functools import wraps
 import numpy as np
 from scipy import stats
 
-from utils import return_dict
+from utils import return_dict, autocorrelation
 
 
 @return_dict
@@ -104,11 +103,6 @@ def median_absolute_deviation(time_series):
 
 @return_dict
 def autocorrelations_8hr(time_series):
-    def autocorrelation(time_series, k):
-        mean_ = mean(time_series)
-        numerator = sum([(time_series[i] - mean_) * (time_series[i - k] - mean_) for i in xrange(k, len(time_series))])
-        denominator = sum([(time_series[i] - mean_) * (time_series[i - k] - mean_) for i in xrange(k, len(time_series))])
-        return numerator / float(denominator)
     return {
         'autocorrelation_8hr': autocorrelation(time_series, 8),
         'autocorrelation_16hr': autocorrelation(time_series, 16),

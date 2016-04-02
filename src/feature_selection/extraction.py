@@ -3,7 +3,7 @@ import aggregation_functions
 from pymongo import MongoClient
 
 from src.import_data import DB_NAME
-
+from utils import cross_correlation
 
 #TODO:
 # - DFT, DWT,
@@ -70,6 +70,33 @@ def do_add_features(time_series_name, time_series_info):
     time_series_info['values_features'] = features
 
 
+def cross_correlation_8hr(time_series_name1, time_series_name2, time_series_info1, time_series_info2):
+    time_series1 = time_series_info1['values']
+    time_series2 = time_series_info2['values']
+    return {
+        '{}_{}_cross_correlation_8hr'.format(time_series_name1, time_series_name2):
+            cross_correlation(time_series1, time_series1, 8),
+        '{}_{}_cross_correlation_16hr'.format(time_series_name1, time_series_name2):
+            cross_correlation(time_series1, time_series2, 16)
+    }
+
+
+def add_cross_correlations(all_time_series):
+    for time_series_name1, time_series_info1 in all_time_series.iteritems():
+        cross_correlations = {}
+        for time_series_name2, time_series_info2 in all_time_series.iteritems():
+            if time_series_name1 == time_series_name2:
+                # Autocorrelation is kept separately
+                continue
+            cross_correlations.update(cross_correlation_8hr(
+                time_series_name1,
+                time_series_name2,
+                time_series_info1,
+                time_series_info2
+            ))
+        time_series_info1['cross_correlations'] = cross_correlations
+
+
 def add_features():
     with MongoClient() as client:
         db = client[DB_NAME]
@@ -80,5 +107,6 @@ def add_features():
                 all_time_series = obj['sequences']
                 for time_series_name, time_series_info in all_time_series.iteritems():
                     do_add_features(time_series_name, time_series_info)
+                add_cross_correlations(all_time_series)
                 collection.save(obj)
             cursor.close()
