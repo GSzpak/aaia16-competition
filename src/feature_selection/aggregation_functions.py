@@ -16,12 +16,12 @@ def std(time_series):
 
 @return_dict
 def min(time_series):
-    return min(time_series)
+    return np.min(time_series)
 
 
 @return_dict
 def max(time_series):
-    return max(time_series)
+    return np.max(time_series)
 
 
 @return_dict
@@ -108,5 +108,9 @@ def autocorrelations_8hr(time_series):
         'autocorrelation_16hr': autocorrelation(time_series, 16),
     }
 
+
+AGGREGATION_FUNCTIONS = [mean, std, min, max, quantiles, linear_weighted_average, quadratic_weighted_average,
+                         arg_max, arg_min, avg_derivatives, avg_integrals, kurtosis, standard_mean_error,
+                         mean_absolute_deviation, median_absolute_deviation, autocorrelations_8hr]
 
 # TODO: DWT, DFT

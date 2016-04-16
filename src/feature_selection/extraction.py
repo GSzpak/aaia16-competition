@@ -57,22 +57,22 @@ def get_all_features(time_series, extraction_funs):
 
 
 def do_add_features(time_series_name, time_series_info):
-    time_series = time_series_info['values']
-    extraction_funs = [function for _, function in aggregation_functions.__dict__.iteritems() if callable(function)]
-    features = get_all_features(time_series, extraction_funs)
+    time_series = map(float, time_series_info['values'])
+    features = get_all_features(time_series, aggregation_functions.AGGREGATION_FUNCTIONS)
     features.update(calculate_8hr_aggregates(time_series, time_series_name))
-    last_8hr_features = get_all_features(time_series[-8:], extraction_funs)
+    last_8hr_features = get_all_features(time_series[-8:], aggregation_functions.AGGREGATION_FUNCTIONS)
     last_8hr_features = {
         '{}_{}'.format('last_8hr', feature_name): feature_value
         for feature_name, feature_value in last_8hr_features.iteritems()
     }
     features.update(last_8hr_features)
+    features = {name: {'value': value} for name, value in features.iteritems()}
     time_series_info['values_features'] = features
 
 
 def cross_correlation_8hr(time_series_name1, time_series_name2, time_series_info1, time_series_info2):
-    time_series1 = time_series_info1['values']
-    time_series2 = time_series_info2['values']
+    time_series1 = map(float, time_series_info1['values'])
+    time_series2 = map(float, time_series_info2['values'])
     return {
         '{}_{}_cross_correlation_8hr'.format(time_series_name1, time_series_name2):
             cross_correlation(time_series1, time_series1, 8),
