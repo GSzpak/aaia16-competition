@@ -1,9 +1,11 @@
-import aggregation_functions
+from collections import defaultdict
+from itertools import izip, count
 
 from pymongo import MongoClient
 import numpy as np
 import pandas as pd
 
+import aggregation_functions
 from src.import_data import DB_NAME
 from src.parse_data import SEQ_COLUMN_NAMES
 
@@ -119,20 +121,34 @@ def add_features():
 
 
 def do_scale_features(collection, sequence_name):
+    def minus_one_to_one_scaling(min_, max_, val):
+        numerator = val - min_
+        denominator = max_ - min_
+        return 2 * (numerator / denominator) - 1
     projection_key = "sequences.{}".format(sequence_name)
     cursor = collection.find(projection={projection_key: True}, modifiers={"$snapshot": True})
-    features = []
+    features = defaultdict(list)
     for obj in cursor:
-        current_features = {key: val['value'] for key, val in obj['sequences'][sequence_name]['values_features']}
-        features.append(current_features)
+        for key, val in obj['sequences'][sequence_name]['values_features'].iteritems():
+            features[key].append(float(val['value']))
     cursor.close()
-    features_df = pd.DataFrame(features, dtype=np.float32)
-    for feature_name, feature_values in features_df.iteritems():
+    for feature_name, feature_values in features.iteritems():
         max_ = np.max(feature_values)
         min_ = np.min(feature_values)
         if max_ <= 1 and min_ >= -1:
-            print "{} already scaled".format(feature_name)
             continue
+        for i in xrange(len(feature_values)):
+            scaled_value = minus_one_to_one_scaling(min_, max_, feature_values[i])
+            assert abs(scaled_value) <= 1
+            feature_values[i] = scaled_value
+    cursor = collection.find(projection={projection_key: True}, modifiers={"$snapshot": True})
+    features = defaultdict(list)
+    for i, obj in izip(count(), cursor):
+        features_dict = obj['sequences'][sequence_name]['values_features']
+        for feature_name, feature_values in features.iteritems():
+            features_dict['scaled_value'] = feature_values[i]
+        collection.save(obj)
+    cursor.close()
 
 
 def scale_features():
