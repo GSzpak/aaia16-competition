@@ -1,9 +1,11 @@
 import aggregation_functions
 
 from pymongo import MongoClient
+import numpy as np
+import pandas as pd
 
 from src.import_data import DB_NAME
-from utils import cross_correlation
+from src.parse_data import SEQ_COLUMN_NAMES
 
 #TODO:
 # - DFT, DWT,
@@ -35,7 +37,6 @@ EIGHT_HOUR_AGGREGATE_FUNS = {
     'avg_difference_in_gactivity': aggregation_functions.mean,
     'avg_difference_in_genergy': aggregation_functions.mean,
 }
-
 
 def calculate_8hr_aggregates(time_series, time_series_name):
     assert len(time_series) == 24
@@ -75,9 +76,9 @@ def cross_correlation_8hr(time_series_name1, time_series_name2, time_series_info
     time_series2 = map(float, time_series_info2['values'])
     return {
         '{}_{}_cross_correlation_8hr'.format(time_series_name1, time_series_name2):
-            cross_correlation(time_series1, time_series1, 8),
+            aggregation_functions.cross_correlation(time_series1, time_series2, 8),
         '{}_{}_cross_correlation_16hr'.format(time_series_name1, time_series_name2):
-            cross_correlation(time_series1, time_series2, 16)
+            aggregation_functions.cross_correlation(time_series1, time_series2, 16)
     }
 
 
@@ -103,10 +104,52 @@ def add_features():
         collections = [db.training_data, db.test_data]
         for collection in collections:
             cursor = collection.find(filter={}, modifiers={"$snapshot": True})
+            counter = 0
             for obj in cursor:
                 all_time_series = obj['sequences']
                 for time_series_name, time_series_info in all_time_series.iteritems():
                     do_add_features(time_series_name, time_series_info)
                 add_cross_correlations(all_time_series)
                 collection.save(obj)
+                counter += 1
+                print counter
+                if counter % 1000 == 0:
+                    print "Progress: {}".format(counter)
+            cursor.close()
+
+
+def do_scale_features(collection, sequence_name):
+    projection_key = "sequences.{}".format(sequence_name)
+    cursor = collection.find(projection={projection_key: True}, modifiers={"$snapshot": True})
+    features = []
+    for obj in cursor:
+        current_features = {key: val['value'] for key, val in obj['sequences'][sequence_name]['values_features']}
+        features.append(current_features)
+    cursor.close()
+    features_df = pd.DataFrame(features, dtype=np.float32)
+    for feature_name, feature_values in features_df.iteritems():
+        max_ = np.max(feature_values)
+        min_ = np.min(feature_values)
+        if max_ <= 1 and min_ >= -1:
+            print "{} already scaled".format(feature_name)
+            continue
+
+
+def scale_features():
+    with MongoClient() as client:
+        db = client[DB_NAME]
+        collections = [db.training_data, db.test_data]
+        for collection in collections:
+            cursor = collection.find(filter={}, modifiers={"$snapshot": True})
+            counter = 0
+            for obj in cursor:
+                all_time_series = obj['sequences']
+                for time_series_name, time_series_info in all_time_series.iteritems():
+                    do_add_features(time_series_name, time_series_info)
+                add_cross_correlations(all_time_series)
+                collection.save(obj)
+                counter += 1
+                print counter
+                if counter % 1000 == 0:
+                    print "Progress: {}".format(counter)
             cursor.close()

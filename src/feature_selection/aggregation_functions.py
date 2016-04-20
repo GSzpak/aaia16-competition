@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import stats
 
-from utils import return_dict, autocorrelation
+from utils import return_dict
 
 
 @return_dict
@@ -27,9 +27,9 @@ def max(time_series):
 @return_dict
 def quantiles(time_series):
     return {
-        'quantile_25': np.percentile(time_series, 25),
-        'median': np.percentile(time_series, 50),
-        'quantile_75': np.percentile(time_series, 75),
+        'quantile_25': np.percentile(time_series, 25, interpolation='midpoint'),
+        'median': np.percentile(time_series, 50, interpolation='midpoint'),
+        'quantile_75': np.percentile(time_series, 75, interpolation='midpoint'),
     }
 
 
@@ -101,12 +101,28 @@ def median_absolute_deviation(time_series):
     return np.percentile(np.absolute(time_series - np.percentile(time_series, 50)), 50)
 
 
+def autocorrelation(time_series, k):
+    return cross_correlation(time_series, time_series, k)
+
+
 @return_dict
 def autocorrelations_8hr(time_series):
     return {
         'autocorrelation_8hr': autocorrelation(time_series, 8),
         'autocorrelation_16hr': autocorrelation(time_series, 16),
     }
+
+
+def cross_correlation(time_series1, time_series2, k):
+    def std_estimate(time_series, mean_, length):
+        return np.sqrt(sum([(time_series[i] - mean_) ** 2 for i in xrange(length)]))
+    assert len(time_series1) == len(time_series2)
+    length = len(time_series1)
+    mean1 = np.mean(time_series1)
+    mean2 = np.mean(time_series2)
+    numerator = sum([(time_series1[i] - mean1) * (time_series2[i - k] - mean2) for i in xrange(k, length)])
+    denominator = std_estimate(time_series1, mean1, length) * std_estimate(time_series2, mean2, length)
+    return numerator / denominator if denominator != 0.0 else 0.0
 
 
 AGGREGATION_FUNCTIONS = [mean, std, min, max, quantiles, linear_weighted_average, quadratic_weighted_average,
