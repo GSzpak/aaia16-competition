@@ -1,18 +1,39 @@
-from collections import defaultdict
-from itertools import izip, count
+import sys
 
 from pymongo import MongoClient
-import numpy as np
-import pandas as pd
 
 import aggregation_functions
 from src.import_data import DB_NAME
-from src.parse_data import SEQ_COLUMN_NAMES
+from working_site_features import CONTINUOUS_FEATURES, CATEGORICAL_FEATURES
+
+
+CROSS_CORRELATIONS_FEATURES_KEY = 'cross_correlations'
+VALUES_FEATURES_KEY = 'values_features'
+ADDITIONAL_FEATURES = [
+    'main_working_id',
+    'total_bumps_energy',
+    'total_tremors_energy',
+    'total_destressing_blasts_energy',
+    'total_seismic_energy',
+    'latest_progress_estimation_l',
+    'latest_progress_estimation_r',
+    'latest_maximum_yield',
+    'latest_maximum_meter',
+] + CONTINUOUS_FEATURES
+FEATURES_TO_VECTORIZE = [
+    'latest_seismic_assessment',
+    'latest_seismoacoustic_assessment',
+    'latest_comprehensive_assessment',
+    'latest_hazards_assessment',
+    'geological_assessment'
+] + CATEGORICAL_FEATURES
+VECTORIZED_FEATURES_KEY = 'vectorized_features'
+
 
 #TODO:
 # - DFT, DWT,
-# auto-correlations,
-# cross-correlations
+# auto-correlations - done, only for 8hr
+# cross-correlations - done, only for 8hr
 
 
 EIGHT_HOUR_AGGREGATE_FUNS = {
@@ -39,6 +60,7 @@ EIGHT_HOUR_AGGREGATE_FUNS = {
     'avg_difference_in_gactivity': aggregation_functions.mean,
     'avg_difference_in_genergy': aggregation_functions.mean,
 }
+
 
 def calculate_8hr_aggregates(time_series, time_series_name):
     assert len(time_series) == 24
@@ -70,7 +92,7 @@ def do_add_features(time_series_name, time_series_info):
     }
     features.update(last_8hr_features)
     features = {name: {'value': value} for name, value in features.iteritems()}
-    time_series_info['values_features'] = features
+    time_series_info[VALUES_FEATURES_KEY] = features
 
 
 def cross_correlation_8hr(time_series_name1, time_series_name2, time_series_info1, time_series_info2):
@@ -97,7 +119,7 @@ def add_cross_correlations(all_time_series):
                 time_series_info1,
                 time_series_info2
             ))
-        time_series_info1['cross_correlations'] = cross_correlations
+        time_series_info1[CROSS_CORRELATIONS_FEATURES_KEY] = cross_correlations
 
 
 def add_features():
@@ -114,58 +136,7 @@ def add_features():
                 add_cross_correlations(all_time_series)
                 collection.save(obj)
                 counter += 1
-                print counter
                 if counter % 1000 == 0:
                     print "Progress: {}".format(counter)
-            cursor.close()
-
-
-def do_scale_features(collection, sequence_name):
-    def minus_one_to_one_scaling(min_, max_, val):
-        numerator = val - min_
-        denominator = max_ - min_
-        return 2 * (numerator / denominator) - 1
-    projection_key = "sequences.{}".format(sequence_name)
-    cursor = collection.find(projection={projection_key: True}, modifiers={"$snapshot": True})
-    features = defaultdict(list)
-    for obj in cursor:
-        for key, val in obj['sequences'][sequence_name]['values_features'].iteritems():
-            features[key].append(float(val['value']))
-    cursor.close()
-    for feature_name, feature_values in features.iteritems():
-        max_ = np.max(feature_values)
-        min_ = np.min(feature_values)
-        if max_ <= 1 and min_ >= -1:
-            continue
-        for i in xrange(len(feature_values)):
-            scaled_value = minus_one_to_one_scaling(min_, max_, feature_values[i])
-            assert abs(scaled_value) <= 1
-            feature_values[i] = scaled_value
-    cursor = collection.find(projection={projection_key: True}, modifiers={"$snapshot": True})
-    features = defaultdict(list)
-    for i, obj in izip(count(), cursor):
-        features_dict = obj['sequences'][sequence_name]['values_features']
-        for feature_name, feature_values in features.iteritems():
-            features_dict['scaled_value'] = feature_values[i]
-        collection.save(obj)
-    cursor.close()
-
-
-def scale_features():
-    with MongoClient() as client:
-        db = client[DB_NAME]
-        collections = [db.training_data, db.test_data]
-        for collection in collections:
-            cursor = collection.find(filter={}, modifiers={"$snapshot": True})
-            counter = 0
-            for obj in cursor:
-                all_time_series = obj['sequences']
-                for time_series_name, time_series_info in all_time_series.iteritems():
-                    do_add_features(time_series_name, time_series_info)
-                add_cross_correlations(all_time_series)
-                collection.save(obj)
-                counter += 1
-                print counter
-                if counter % 1000 == 0:
-                    print "Progress: {}".format(counter)
+                    sys.stdout.flush()
             cursor.close()

@@ -1,5 +1,4 @@
 from functools import wraps
-import numpy as np
 
 
 def return_dict(function):
@@ -13,3 +12,4 @@ def return_dict(function):
                 function.__name__: result
             }
     return wrapper
+
