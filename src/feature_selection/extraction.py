@@ -4,7 +4,7 @@ from pymongo import MongoClient
 
 import aggregation_functions
 from src.import_data import DB_NAME
-from working_site_features import CONTINUOUS_FEATURES,
+from working_site_features import CONTINUOUS_FEATURES
 
 
 CROSS_CORRELATIONS_FEATURES_KEY = 'cross_correlations'

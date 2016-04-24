@@ -26,7 +26,7 @@ def save_binarized(collection, binarized_df, obj_id_to_index):
     cursor.close()
 
 
-def do_binarize_features(collection)
+def do_binarize_features(collection):
     cursor = collection.find(filter={}, modifiers={"$snapshot": True})
     obj_id_to_index = {}
     rows_to_binarize = []
