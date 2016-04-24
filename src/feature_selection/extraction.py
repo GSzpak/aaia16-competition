@@ -8,7 +8,7 @@ from working_site_features import CONTINUOUS_FEATURES
 
 
 CROSS_CORRELATIONS_FEATURES_KEY = 'cross_correlations'
-VALUES_FEATURES_KEY = 'values_features'
+FEATURES_KEY = 'values_features'
 ADDITIONAL_FEATURES = [
     'main_working_id',
     'total_bumps_energy',
@@ -20,7 +20,7 @@ ADDITIONAL_FEATURES = [
     'latest_maximum_yield',
     'latest_maximum_meter',
 ] + CONTINUOUS_FEATURES
-
+FEATURE_VALUE_KEY = 'value'
 
 
 #TODO:
@@ -84,8 +84,8 @@ def do_add_features(time_series_name, time_series_info):
         for feature_name, feature_value in last_8hr_features.iteritems()
     }
     features.update(last_8hr_features)
-    features = {name: {'value': value} for name, value in features.iteritems()}
-    time_series_info[VALUES_FEATURES_KEY] = features
+    features = {name: {FEATURE_VALUE_KEY: value} for name, value in features.iteritems()}
+    time_series_info[FEATURES_KEY] = features
 
 
 def cross_correlation_8hr(time_series_name1, time_series_name2, time_series_info1, time_series_info2):
