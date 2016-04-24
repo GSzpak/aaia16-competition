@@ -4,7 +4,7 @@ from pymongo import MongoClient
 
 import aggregation_functions
 from src.import_data import DB_NAME
-from working_site_features import CONTINUOUS_FEATURES, CATEGORICAL_FEATURES
+from working_site_features import CONTINUOUS_FEATURES,
 
 
 CROSS_CORRELATIONS_FEATURES_KEY = 'cross_correlations'
@@ -20,14 +20,7 @@ ADDITIONAL_FEATURES = [
     'latest_maximum_yield',
     'latest_maximum_meter',
 ] + CONTINUOUS_FEATURES
-FEATURES_TO_VECTORIZE = [
-    'latest_seismic_assessment',
-    'latest_seismoacoustic_assessment',
-    'latest_comprehensive_assessment',
-    'latest_hazards_assessment',
-    'geological_assessment'
-] + CATEGORICAL_FEATURES
-VECTORIZED_FEATURES_KEY = 'vectorized_features'
+
 
 
 #TODO:
