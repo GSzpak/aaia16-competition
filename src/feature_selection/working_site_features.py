@@ -28,7 +28,7 @@ def read_working_site_dict():
         csv_reader = csv.reader(f)
         for row in csv_reader:
             current_working_site_data = {feature_name: value for feature_name, value in zip(ALL_FEATURES, row)}
-            working_id = current_working_site_data.pop([ALL_FEATURES[0]])
+            working_id = current_working_site_data.pop(ALL_FEATURES[0])
             result[working_id] = current_working_site_data
     return result
 
@@ -36,7 +36,7 @@ def read_working_site_dict():
 def do_add_working_site_features(collection, working_site_data):
     cursor = collection.find(filter={}, modifiers={"$snapshot": True})
     for obj in cursor:
-        working_site_id = obj(['main_working_id'])
+        working_site_id = obj['main_working_id']
         current_working_data = working_site_data[working_site_id]
         for feature_name in itertools.chain(CONTINUOUS_FEATURES, CATEGORICAL_FEATURES):
             obj[feature_name] = current_working_data[feature_name]

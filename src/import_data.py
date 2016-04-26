@@ -8,7 +8,8 @@ from parse_data import read_data
 DB_NAME = 'aaia_competition'
 TRAINING_COLLECTION = 'training_data'
 TEST_COLLECTION = 'test_data'
-DATA_DIR = 'data'
+BASE_DIR = path.dirname(path.dirname(__file__))
+DATA_DIR = path.join(BASE_DIR, 'data')
 TRAINING_DATA = [('trainingData.csv', 'trainingLabels.csv')] + \
                 [('additional_training_data_{}.csv'.format(i), "additional_training_labels_{}.csv".format(i))
                     for i in xrange(1, 5)]
