@@ -1,4 +1,5 @@
 import csv
+import itertools
 import os
 
 from pymongo import MongoClient
@@ -37,9 +38,7 @@ def do_add_working_site_features(collection, working_site_data):
     for obj in cursor:
         working_site_id = obj(['main_working_id'])
         current_working_data = working_site_data[working_site_id]
-        for feature_name in CONTINUOUS_FEATURES:
-            obj[feature_name] = current_working_data[feature_name]
-        for feature_name in CATEGORICAL_FEATURES:
+        for feature_name in itertools.chain(CONTINUOUS_FEATURES, CATEGORICAL_FEATURES):
             obj[feature_name] = current_working_data[feature_name]
         collection.save(obj)
     cursor.close()
