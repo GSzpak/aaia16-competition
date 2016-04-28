@@ -32,14 +32,20 @@ def do_scale_features(collection, scaling_function):
     scaled_df = scaling_function(df_to_scale)
     scaled_df.columns = df_to_scale.columns
     mongo_key = FUNCTION_TO_KEY[scaling_function]
-    cursor = collection.find(filter={}, modifiers={"$snapshot": True})
-    for obj in cursor:
-        index_in_df = id_to_index[obj['_id']]
+    counter = 0
+    for _id, index_in_df in id_to_index.iteritems():
         scaled_features = {feature_name: scaled_df.ix[index_in_df, feature_name]
                            for feature_name in scaled_df.columns}
-        obj[mongo_key] = scaled_features
-        collection.save(obj)
-    cursor.close()
+        collection.update_one({
+            '_id': _id
+        }, {
+            '$set': {
+                mongo_key: scaled_features
+            }
+        }, upsert=False)
+        if counter % 1000 == 0:
+            print "Progress: {}".format(counter)
+        counter += 1
 
 
 def scale_features(scaling_function=preprocessing.scale):
