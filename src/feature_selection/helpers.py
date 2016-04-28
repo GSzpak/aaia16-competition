@@ -17,7 +17,7 @@ ALL_FEATURES_KEY = 'features'
 
 def get_sequence_features(sequence_name, sequence_info):
     features = copy.copy(sequence_info[CROSS_CORRELATIONS_FEATURES_KEY])
-    for feature_name, feature_info in sequence_info[FEATURES_KEY]:
+    for feature_name, feature_info in sequence_info[FEATURES_KEY].iteritems():
         current_key = "{}_{}".format(sequence_name, feature_name)
         features[current_key] = feature_info[FEATURE_VALUE_KEY]
     return features
