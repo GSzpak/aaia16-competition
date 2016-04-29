@@ -1,5 +1,7 @@
+import itertools
 import sys
 
+import numpy as np
 from pymongo import MongoClient
 
 import aggregation_functions
@@ -46,12 +48,12 @@ EIGHT_HOUR_AGGREGATE_FUNS = {
     'highest_bump_energy': max,
     'max_gactivity': max,
     'max_genergy': max,
-    'avg_gactivity': aggregation_functions.mean,
-    'avg_genergy': aggregation_functions.mean,
+    'avg_gactivity': np.mean,
+    'avg_genergy': np.mean,
     'max_difference_in_gactivity': max,
     'max_difference_in_genergy': max,
-    'avg_difference_in_gactivity': aggregation_functions.mean,
-    'avg_difference_in_genergy': aggregation_functions.mean,
+    'avg_difference_in_gactivity': np.mean,
+    'avg_difference_in_genergy': np.mean,
 }
 
 
@@ -121,15 +123,14 @@ def add_features():
         collections = [db.training_data, db.test_data]
         for collection in collections:
             cursor = collection.find(filter={}, modifiers={"$snapshot": True})
-            counter = 0
-            for obj in cursor:
+            for counter, obj in itertools.izip(itertools.count(), cursor):
                 all_time_series = obj['sequences']
                 for time_series_name, time_series_info in all_time_series.iteritems():
                     do_add_features(time_series_name, time_series_info)
                 add_cross_correlations(all_time_series)
                 collection.save(obj)
                 counter += 1
-                if counter % 1000 == 0:
+                if counter % 100 == 0:
                     print "Progress: {}".format(counter)
                     sys.stdout.flush()
             cursor.close()
