@@ -7,6 +7,7 @@ def optimize_binary_codes(B):
 
 
 def get_discr_binary_codes(X, y, num_of_features):
+
     pass
 
 
