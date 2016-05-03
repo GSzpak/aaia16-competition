@@ -1,5 +1,7 @@
 import numpy as np
 
+from sklearn.linear_model import SGDRegressor
+
 
 def get_most_often_occuring_features(matrix, num_of_columns):
     """
@@ -34,8 +36,36 @@ def most_often_occuring_pivot_features(X_train, X_test, num_of_features):
     return [index for (index, score) in result]
 
 
-def structural_correspondence_transform(X_train, X_test, loss_function,
-                                        choose_pivot_features_fun, num_of_pivot_features,
-                                        lambda_2_reg=0.0001):
+def get_pivot_predictor(X, y, pivot_index, loss_function, lambda_2):
+    # delete column with current pivot feature
+    X = np.delete(X, pivot_index, axis=1)
+    regressor = SGDRegressor(loss=loss_function, penalty='l2', alpha=lambda_2)
+    regressor.fit(X, y)
+    # FIXME: coefficient for removed feature?
+    return regressor.coef_
+
+
+def augment_matrix(X, pivot_predictors):
+    assert pivot_predictors.shape[1] == X.shape[1]
+    features_to_add = pivot_predictors * X.T
+    np.append(X, features_to_add, axis=1)
+
+
+def structural_correspondence_transform(X_train, X_test, choose_pivot_features_fun, num_of_pivot_features,
+                                        loss_function='huber', lambda_2_reg=0.0001, approximate=False):
     pivot_features_indices = choose_pivot_features_fun(X_train, X_test, num_of_pivot_features)
-    labels_for_pivot = {}
+    X = np.concatenate((X_train, X_test))
+    num_of_examples = X.shape[0]
+    labels_for_pivot = {
+        pivot: [X[j, pivot] for j in xrange(num_of_examples)] for pivot in pivot_features_indices
+    }
+    pivot_predictors = []
+    for pivot, labels in labels_for_pivot.iteritems():
+        pivot_predictors.append(get_pivot_predictor(X, labels, pivot, loss_function, lambda_2_reg))
+    pivot_predictors = np.asarray(pivot_predictors)
+    if approximate:
+        # Add SVD to reduce dimensionality
+        pass
+    augment_matrix(X_train, pivot_predictors)
+    augment_matrix(X_test, pivot_predictors)
+    return X_train, X_test
