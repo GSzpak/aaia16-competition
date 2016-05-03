@@ -36,8 +36,7 @@ def get_discr_binary_codes(X, y, num_of_features):
         return (1 + np.sign(X)) / 2
     pca = PCA(n_components=num_of_features)
     svm_classifier = svm.SVC(kernel='linear')
-    X_T = X.transpose()
-    original_dim = X_T.shape[0]
+    original_dim = X.T.shape[0]
     B = pca.fit_transform(X)
     B = binarize(B)
     labels_matrix = 2 * B - 1
@@ -47,7 +46,7 @@ def get_discr_binary_codes(X, y, num_of_features):
             current_labels = labels_matrix[:, i]
             svm_classifier.fit(X, current_labels)
             hyperplanes_T[i] = svm_classifier.coef_
-        B_prim = binarize(hyperplanes_T * X)
+        B_prim = binarize(hyperplanes_T * X.T)
         B_prim = optimize_binary_codes(B_prim, y)
         if B_prim == B:
             return hyperplanes_T
