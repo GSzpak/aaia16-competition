@@ -41,8 +41,10 @@ def get_pivot_predictor(X, y, pivot_index, loss_function, lambda_2):
     X = np.delete(X, pivot_index, axis=1)
     regressor = SGDRegressor(loss=loss_function, penalty='l2', alpha=lambda_2)
     regressor.fit(X, y)
-    # FIXME: coefficient for removed feature?
-    return regressor.coef_
+    result = regressor.coef_
+    # Insert coefficient for deleted feature to keep appropriate dimension
+    np.insert(result, pivot_index, 0)
+    return result
 
 
 def augment_matrix(X, pivot_predictors):
